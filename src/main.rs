@@ -4,6 +4,9 @@ use std::io;
 use std::io::{ BufReader, BufRead, Error, ErrorKind };
 use std::process::exit;
 
+// for simple testing, from another term window
+// $ echo "a=b c=d e=f BLERG" | nc localhost 1516
+
 fn main() {
   let args : Vec<String> = env::args().collect();
 
@@ -44,13 +47,16 @@ fn handle_client(stream: &mut TcpStream) -> Result<(),io::Error> {
 
 fn handle_line(line: String) -> Result<(),io::Error> {
   let f = Fortigate{};
-  let _res = f.process(&line[..]);
+  // let _res = f.process(&line[..]);
+  let _res = f.process2(&line[..]);
+
 
   Ok(())
 }
 
 pub trait LogProcessor {
-  fn process(&self, string: &str) -> Result<String,io::Error>;
+  fn process (&self, string: &str) -> Result<String,io::Error>;
+  fn process2(&self, string: &str) -> Result<String,io::Error>;
 }
 
 struct Fortigate {}
@@ -58,11 +64,38 @@ struct Fortigate {}
 impl LogProcessor for Fortigate {
   fn process(&self, string: &str) -> Result<String,io::Error> {
     // println!("sup {}", string);
-    let tokens : Vec<Vec<String>> = string.split_whitespace().map(|x| x.split(' ').map(|x| x.to_owned()).collect()).collect();
+    let tokens : Vec<Vec<String>> = string.split_whitespace() .map(|x| x.split(' ') .map(|x| x.to_owned()) .collect() ) .collect(); 
     // Err(Error::new(ErrorKind::InvalidData, "bad line".to_string()))
 
-    // first dim is within line, 2nd dim is line
-    println!("token value: {:?}", &tokens[0][0][..]);
+    println!("token value: {:?}", tokens);
+
+    Ok("yes".to_owned())
+  }
+
+  fn process2(&self, string: &str) -> Result<String,io::Error> {
+    // attempt to reuse previous code to include split on "="
+    //  - it works, but the output is verbose internals
+    // println!("sup {:?}", string
+    //   .split_whitespace()
+    //   .map(|x| x.split('=').map(|x| x.to_owned()))
+    //   .collect::<Vec<_>>());
+
+    // simpler 2 phase approach
+    let tokens : Vec<&str> = string
+      .split_whitespace()
+      .collect();
+
+    println!("token value: {:?}", tokens);
+    for token in tokens.iter() {
+      println!("{:?}", token.split('=').collect::<Vec<_>>() );
+    }
+
+    // confused map experiment that ...umm...doesn't crash
+    println!("{:?}",
+      tokens
+        .iter()
+        .map(|x| x.split('='))
+        .collect::<Vec<_>>() );
 
     Ok("yes".to_owned())
   }
@@ -73,8 +106,15 @@ pub struct NLog {
 }
 
 #[test]
-fn fortigate_parses(){
+fn fortigate_parses() {
   let f = Fortigate{};
   let res = f.process("a=b c=d e=f g=h");
   assert_eq!(res.unwrap(),"123")
+}
+
+#[test]
+fn fortigate_parses2() {
+  let f = Fortigate{};
+  // not complete - func call still just prints most data
+  let res = f.process2("a=b c=d e=f BLERG");
 }
