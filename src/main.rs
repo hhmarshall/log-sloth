@@ -1,5 +1,12 @@
 extern crate ctrlc;
 
+//serde stuff
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+extern crate serde_json;
+
 use std::{env, io, thread};
 use std::error::Error;
 use std::net::{TcpListener, TcpStream, Shutdown};
@@ -27,6 +34,8 @@ fn main() {
         r.store(false, Ordering::SeqCst);
     }).expect("Error setting Ctrl-C handler");
 
+    // until #[test] works (below), confirm serde code works here
+    serde_json_simple_test();
 
     println!("now starting up stuff...");
     match &args[1][..] {
@@ -186,6 +195,23 @@ pub struct Log {
     pub message: Option<String>,
 }
 
+fn serde_json_simple_test() {
+#[derive(Serialize, Deserialize, Debug)]
+  struct Pnt {
+    x: i32,
+    y: i32,
+  }
+
+  let point      = Pnt { x: 1, y: 2 };
+  let serialized = serde_json::to_string(&point).unwrap();
+  println!("serialized = {}", serialized);
+  // serialized = {"x":1,"y":2}
+
+  let deserialized: Pnt = serde_json::from_str(&serialized).unwrap();
+  println!("deserialized = {:?}", deserialized);
+  // deserialized = Pnt { x: 1, y: 2 }}
+}
+
 #[test]
 fn fortigate_parses() {
     let f = Fortigate {};
@@ -225,4 +251,30 @@ fn fortigate_parses_bad_kv() {
             message: None,
         }
     )
+}
+
+#[test]
+fn serde_json_simple() {
+#[derive(Serialize, Deserialize, Debug)]
+  struct Point {
+    x: i32,
+    y: i32,
+  }
+
+  let point      = Point { x: 1, y: 2 };
+  let serialized = serde_json::to_string(&point).unwrap();
+  // println!("serialized = {}", serialized);
+  // serialized = {"x":1,"y":2}
+
+  let deserialized: Point = serde_json::from_str(&serialized).unwrap();
+  println!("deserialized = {:?}", deserialized);
+  //  deserialized = Point { x: 1, y: 2 }
+
+//  assert_eq!(point, deserialized);
+// ---> above FAILS with ...
+// 253 |   assert_eq!(point, deserialized);
+//     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//     |
+//     = note: an implementation of `std::cmp::PartialEq` might be missing for `serde_json_simple::Point`
+//     = note: this error originates in a macro outside of the current crate
 }
