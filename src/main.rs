@@ -16,9 +16,6 @@ use std::sync::atomic::{ AtomicBool, Ordering };
 use std::process::exit;
 use std::time::Duration;
 
-// for simple testing, from another term window
-// $ echo "a=b c=d e=f BLERG" | nc localhost 1516
-
 fn main() {
     let args: Vec<String> = env::args().collect();
 
